@@ -15,7 +15,7 @@ two_full_decks = ["A-S", "2-S", "3-S", "4-S", "5-S", "6-S", "7-S", "8-S", "9-S",
                   "A-H", "2-H", "3-H", "4-H", "5-H", "6-H", "7-H", "8-H", "9-H", "10-H", "J-H", "Q-H", "K-H",
                   "JOKER", "JOKER", "JOKER", "JOKER"]
 players_hands = {0: [], 1: [], 2: [], 3: [], 4: [], 5: []}
-num_players = 2
+num_players = 6
 
 # Progressive Rummy Rounds:
 # Round 1. 2 sets
@@ -169,7 +169,7 @@ def first_round_two_sets(p_hand):
     # debugging
     # print("1. Sort Values: " + str(value_sorted))
     # 2. Count JOK in hand
-    jokers = joker_count(p_hand)
+    jokers = joker_count(value_sorted)
     # debugging
     # print("2. Jokers: " + str(p_hand) + str(jokers))
     # 3. Count pairs and sets in hand
@@ -189,78 +189,102 @@ def first_round_two_sets(p_hand):
     # 4. Count pairs/sets and record cards in pairs/sets
     for key in value_dict:
         value_dict_lens[key] = len(value_dict[key])
-        if len(value_dict[key]) == 2:
+        if len(value_dict[key]) == 2 and key != "JOKER":
             pairs.append(key)
             pair_count += 1
-        if len(value_dict[key]) >= 3:
+        if len(value_dict[key]) >= 3 and key != "JOKER":
             sets.append(key)
             set_count += 1
     # debugging
-    # print("3. Value len: " + str(value_dict_lens))
-    # print("4. Pairs- " + str(pair_count) + ": " + str(pairs) +
-    #       ", Sets- " + str(set_count) + ": " + str(sets) +
-    #       ", Jokers- " + str(jokers))
+    # print("4. Value len: " + str(value_dict_lens))
+    # print("5. Pairs- " + str(pair_count) + ": " + str(pairs) +
+    #     ", Sets- " + str(set_count) + ": " + str(sets) +
+    #     ", Jokers- " + str(jokers))
     # Order of hand
     # 5. Non pairs/sets in descending order + pairs in ascending order + sets in ascending order + jokers
     sorted_hand = []
     for key in reversed(value_dict):
         if (value_dict_lens[key] == 1) and not (key == "JOKER"):
             sorted_hand.append(value_dict[key])
+    # debugging
+    # print("6a. No pairs/sets/jokers: " + str(sorted_hand))
     if pair_count >= 1:
         for card in pairs:
             sorted_hand.append(value_dict[card])
+    # debugging
+    # print("6b. Add pairs: " + str(sorted_hand))
     if set_count >= 1:
         for card in sets:
             sorted_hand.append(value_dict[card])
+    # print("6c. Add sets: " + str(sorted_hand))
     if jokers >= 1:
         sorted_hand.append(value_dict["JOKER"])
+    # print("6d. Add jokers: " + str(sorted_hand))
     # Turn a list of lists into one list
     flat_sorted_hand = [element for sublist in sorted_hand for element in sublist]
     # debugging
-    print("5. Sort no joker placement: " + str(flat_sorted_hand))
+    # print("6. Sort no joker placement: " + str(flat_sorted_hand))
     return flat_sorted_hand
-    # Third order sort
-    # LD-NP = Lay Down Not Possible (0), LD-P = Lay Down Possible(1+), BOL = Back of list
+
+    # Lay Down Possibility
+
+    # LD-NP = Lay Down Not Possible (0), LD-P = Lay Down Possible(1+)
+    # O-LD = Opponent Lay Downs (True/False), PO-LD = Play on Opponent Lay Downs
+    # O-LD_lists = Lists of other contracts that have been laid down
+    # BOL = Back of list
+    # Closeness factor ??? # of cards away from LD-P and which card(s) would be needed to achieve it
     # Cannot lay down a set or run with more JOKs than value cards, or consecutive JOKs in a run
 
-    # If LD-P > 1, check is way to find the most valuable move
+    # If LD-P > 1, check all possible ways to find the most valuable move
+    # If O-LD = True, check if most valuable move could be improved with PO-LD
+
     # 2 sets/1 pair/1 JOK ???
     # 4-4, J-J, Q-Q: buy 4 from discard and draw JOK
     # 4-4-4, J-J, Q-Q: JOK, on turn draw J
-    # 4-4-4, J-J-J, Q-Q, JOK: best move is LD: J-J-J, Q-Q-JOK (1 set/1 pair/1 JOK > 2 sets/1 JOK).
+    # 4-4-4, J-J-J, Q-Q, JOK: best move is LD: J-J-J, Q-Q-JOK
+    # (1 set/1 pair/1 JOK > 2 sets/1 JOK).
 
     # 1 set/2+ pairs/2 JOK ???
     # 4-4, 7-7, J-J, Q-Q, JOK: buy 4 from discard and draw JOK
     # 4-4-4, 7-7, J-J, Q-Q, JOK, JOK: on turn draw 4
-    # 4-4-4-4, 7-7, J-J, Q-Q, JOK, JOK:  best move is LD: J-J-JOK, Q-Q-JOK (2 sets/2 JOK > 1 set/1 run/2 JOK).
+    # 4-4-4-4, 7-7, J-J, Q-Q, JOK, JOK:  best move is LD: J-J-JOK, Q-Q-JOK
+    # (2 pairs/2 JOK > 1 set/1 pair/2 JOK).
+
+    # 1 set/2+ pairs/2 JOK/O-LD = True ???
+    # O-LD_lists = [[J-J-J], [Q-Q-Q]]
+    # 4-4, 7-7, J-J, Q-Q, JOK: buy 4 from discard and draw JOK
+    # 4-4-4, 7-7, J-J, Q-Q, JOK, JOK: on turn draw 4
+    # 4-4-4-4, 7-7, J-J, Q-Q, JOK, JOK:  best move is LD: 4-4-4-4-JOK, 7-7-JOK + PO-LD: J-J, Q-Q
+    # (1 set/1 pair/2 JOK + PO-LD > 2 pairs/2 JOK).
+
+    # Begin logic by defining when LD-NP, else then LD-P
+    # If LD-P make further considerations if LD-P > 1 and O-LD
 
     # If no JOK
-    # 2+ sets/ n/a of pairs, LD-P
-    # Else, LD-NP
+    # 2+ sets/ n/a of pairs, LD-P = # of sets - 1, Highest value sets
+    # Else, LD-NP                       0
 
     # If one JOK
-    # 0 pairs. LD-NP. JOK BOL
-    # 1 pair. LD-NP JOK BOL
-    # 2+ pairs. LD-NP. JOK BOL
-    # 1 set/0 pairs. LD-NP. JOK BOL
+    # 0 pairs. LD-NP. JOK BOL           0
+    # 1 pair. LD-NP JOK BOL             0
+    # 2+ pairs. LD-NP. JOK BOL          0
+    # 1 set/0 pairs. LD-NP. JOK BOL     0
     # 1 set/1 pair. LD-P = 1. Add JOK to the of end of pair
     # 1 set/2+ pairs. LD-P = # of pairs. Add JOK to the end of the highest value pair
     # 2+ sets/0 pairs. LD-P = 1. Add JOK to the end of the highest value set
-    # 2+ sets/1 pair. LD-P = 2. See below
-    # 2+ sets/2+ pair. See below
-        # If 2nd highest value set > highest value pair. Add JOK to the end of the highest value set (7-7-7 > Q-Q)
-        # Else. Add JOK to the end of the pair (4-4-4 < Q-Q)
+    # 2+ sets/1 pair. LD-P = 2
+    # 2+ sets/2+ pair
 
     # If two JOKs
-    # 0 pairs. LD-NP. JOKs BOL
-    # 1 pair. LD-NP. JOKs BOL
+    # 0 pairs. LD-NP. JOKs BOL          0
+    # 1 pair. LD-NP. JOKs BOL           0
     # 2+ pairs. LD-P. Add a JOK to the end of the two highest value pairs
-    # 1 set/0 pairs. LD-NP. JOK BOL
+    # 1 set/0 pairs. LD-NP. JOK BOL     0
     # 1 set/1 pair. LD-P. Add a JOK to the end of set and a JOK to the end of pair
     # 1 set/2+ pairs. LD-P. Add a JOK to the end of set and a JOK to the end of the highest value pair ???
     # 2+ sets/0 pairs. LD-P = 1. Add a JOK to the end of the highest value set
-    # 2+ sets/1 pair. LD-P = 2. See below
-    # 2+ sets/2+ pair. See below
+    # 2+ sets/1 pair. LD-P = 2
+    # 2+ sets/2+ pair LD-P
 
     # If three or four JOKs
     # Same LD-NP/LD-P logic as if two JOKs
@@ -284,14 +308,10 @@ for player, hand in players_hands.items():
     print(f"First sort - Player {player + 1}: {first_round_two_sets(hand)}")
 
 # debugging
-test_hand1 = ['9-D', '7-D', '10-H', '9-H', 'J-D', '8-C', 'J-S', '3-H', 'JOKER', "10-D", "9-S"]
+test_hand1 = ['9-D', '7-D', '9-H', '5-D', '8-C', '5-S', '3-H', 'JOKER', "10-D", "9-S"]
+test_hand2 = ['Q-H', 'A-S', 'JOKER', '4-D', 'JOKER', 'K-H', '3-S', 'K-D', '5-H']
+
 first_round_two_sets(test_hand1)
+first_round_two_sets(test_hand2)
 
-# sort_values(test_hand1)
-# sort_suits(test_hand1)
-
-# Fourth round - three sets
-# If a JOK and two sets and no pairs, JOK back of the list
-# If a JOK and two sets and one pair, add JOK to the of end of pair
-# If a JOK and two sets and two or more pairs, add JOK to the end of the pair of the highest value
 

@@ -14,8 +14,8 @@ two_full_decks = ["A-S", "2-S", "3-S", "4-S", "5-S", "6-S", "7-S", "8-S", "9-S",
                   "A-H", "2-H", "3-H", "4-H", "5-H", "6-H", "7-H", "8-H", "9-H", "10-H", "J-H", "Q-H", "K-H",
                   "A-H", "2-H", "3-H", "4-H", "5-H", "6-H", "7-H", "8-H", "9-H", "10-H", "J-H", "Q-H", "K-H",
                   "JOKER", "JOKER", "JOKER", "JOKER"]
-players_hands = {0: [], 1: [], 2: [], 3: [], 4: [], 5: []}
-num_players = 6
+players_hands = {0: [], 1: [], 2: [], 3: [], 4: [], 5: [],
+                 6: [], 7: [], 8: [], 9:[], 10: []} # debugging. Only keep 0-5 for actual gameplay
 
 # Progressive Rummy Rounds:
 # Round 1. 2 sets
@@ -189,10 +189,10 @@ def first_round_two_sets(p_hand):
     # 4. Count pairs/sets and record cards in pairs/sets
     for key in value_dict:
         value_dict_lens[key] = len(value_dict[key])
-        if len(value_dict[key]) == 2 and key != "JOKER":
+        if (len(value_dict[key]) == 2) and (key != "JOKER"):
             pairs.append(key)
             pair_count += 1
-        if len(value_dict[key]) >= 3 and key != "JOKER":
+        if (len(value_dict[key]) >= 3) and (key != "JOKER"):
             sets.append(key)
             set_count += 1
     # debugging
@@ -204,7 +204,7 @@ def first_round_two_sets(p_hand):
     # 5. Non pairs/sets in descending order + pairs in ascending order + sets in ascending order + jokers
     sorted_hand = []
     for key in reversed(value_dict):
-        if (value_dict_lens[key] == 1) and not (key == "JOKER"):
+        if (value_dict_lens[key] == 1) and (key != "JOKER"):
             sorted_hand.append(value_dict[key])
     # debugging
     # print("6a. No pairs/sets/jokers: " + str(sorted_hand))
@@ -224,33 +224,35 @@ def first_round_two_sets(p_hand):
     flat_sorted_hand = [element for sublist in sorted_hand for element in sublist]
     # debugging
     # print("6. Sort no joker placement: " + str(flat_sorted_hand))
-    return flat_sorted_hand
 
-    # Lay Down Possibility
+    # Lay Down Possibilities
 
     # LD-NP = Lay Down Not Possible (0), LD-P = Lay Down Possible(1+)
     # O-LD = Opponent Lay Downs (True/False), PO-LD = Play on Opponent Lay Downs
     # O-LD_lists = Lists of other contracts that have been laid down
     # BOL = Back of list
-    # Closeness factor ??? # of cards away from LD-P and which card(s) would be needed to achieve it
-    # Cannot lay down a set or run with more JOKs than value cards, or consecutive JOKs in a run
+    # Closeness factor -  # of cards away from LD-P and which card(s) would be needed to achieve it
+    # Close_1 = pairs, 1 card away from a set. Close_2 = singles, 2 cards away from a set
+    # Equation based on pairs, sets, jokers. # of ideal value cards away from LD-P
+    # Card-Value gap ??? take a slight loss in value of lay down value if more cards can be laid down
+    # Ex. 5-5-5-5-5 > 9-9-9. I would guess right now the card gap should be >= 2 and value-loss < 5
 
     # If LD-P > 1, check all possible ways to find the most valuable move
     # If O-LD = True, check if most valuable move could be improved with PO-LD
 
-    # 2 sets/1 pair/1 JOK ???
+    # Scenario 1: 2 sets/1 pair/1 JOK ???
     # 4-4, J-J, Q-Q: buy 4 from discard and draw JOK
     # 4-4-4, J-J, Q-Q: JOK, on turn draw J
     # 4-4-4, J-J-J, Q-Q, JOK: best move is LD: J-J-J, Q-Q-JOK
     # (1 set/1 pair/1 JOK > 2 sets/1 JOK).
 
-    # 1 set/2+ pairs/2 JOK ???
+    # Scenario 2: 1 set/2+ pairs/2 JOK ???
     # 4-4, 7-7, J-J, Q-Q, JOK: buy 4 from discard and draw JOK
     # 4-4-4, 7-7, J-J, Q-Q, JOK, JOK: on turn draw 4
     # 4-4-4-4, 7-7, J-J, Q-Q, JOK, JOK:  best move is LD: J-J-JOK, Q-Q-JOK
     # (2 pairs/2 JOK > 1 set/1 pair/2 JOK).
 
-    # 1 set/2+ pairs/2 JOK/O-LD = True ???
+    # Scenario 3: 1 set/2+ pairs/2 JOK/O-LD = True ???
     # O-LD_lists = [[J-J-J], [Q-Q-Q]]
     # 4-4, 7-7, J-J, Q-Q, JOK: buy 4 from discard and draw JOK
     # 4-4-4, 7-7, J-J, Q-Q, JOK, JOK: on turn draw 4
@@ -259,11 +261,16 @@ def first_round_two_sets(p_hand):
 
     # Begin logic by defining when LD-NP, else then LD-P
     # If LD-P make further considerations if LD-P > 1 and O-LD
+    # Simple equations for each if-statement to determine LD-P #
 
     # If no JOK
     # 2+ sets/ n/a of pairs, LD-P = # of sets - 1, Highest value sets
     # Else, LD-NP                       0
-
+    if jokers == 0:
+        if set_count >= 2:
+            can_lay_down = True
+        else:
+            can_lay_down = False
     # If one JOK
     # 0 pairs. LD-NP. JOK BOL           0
     # 1 pair. LD-NP JOK BOL             0
@@ -272,8 +279,15 @@ def first_round_two_sets(p_hand):
     # 1 set/1 pair. LD-P = 1. Add JOK to the of end of pair
     # 1 set/2+ pairs. LD-P = # of pairs. Add JOK to the end of the highest value pair
     # 2+ sets/0 pairs. LD-P = 1. Add JOK to the end of the highest value set
-    # 2+ sets/1 pair. LD-P = 2
-    # 2+ sets/2+ pair
+    # 2+ sets/1 pair. LD-P = # of sets - 1
+    # 2+ sets/2+ pair LD-P =
+    if jokers == 1:
+        if (set_count == 1) and (pair_count >= 1):
+            can_lay_down = True
+        elif set_count >= 2:
+            can_lay_down = True
+        else:
+            can_lay_down = False
 
     # If two JOKs
     # 0 pairs. LD-NP. JOKs BOL          0
@@ -292,14 +306,22 @@ def first_round_two_sets(p_hand):
     # 2+ pairs. 3 on the highest. 4 on the second highest
     # 1 set/1 pair. 3 on the set. 4 on the pair
     # 1 set/2+ pairs.
-
-    # Fourth round - three sets
-    # If a JOK and two sets and no pairs, JOK back of the list
-    # If a JOK and two sets and one pair, add JOK to the of end of pair
-    # If a JOK and two sets and two or more pairs, add JOK to the end of the pair of the highest value
+    if jokers >= 2:
+        if (set_count == 0) and (pair_count >= 2):
+            can_lay_down = True
+        elif (set_count == 1) and (pair_count >= 1):
+            can_lay_down = True
+        elif set_count >= 2:
+            can_lay_down = True
+        else:
+            can_lay_down = False
+    # debugging
+    # print("7. Lay down possible: " + str(flat_sorted_hand) + ", " + str(lay_down_possible))
+    return flat_sorted_hand, can_lay_down
 
 
 # Start point
+num_players = 10
 shuffle_and_deal(two_full_decks)
 for player, hand in players_hands.items():
     if player == num_players:
@@ -310,6 +332,7 @@ for player, hand in players_hands.items():
 # debugging
 test_hand1 = ['9-D', '7-D', '9-H', '5-D', '8-C', '5-S', '3-H', 'JOKER', "10-D", "9-S"]
 test_hand2 = ['Q-H', 'A-S', 'JOKER', '4-D', 'JOKER', 'K-H', '3-S', 'K-D', '5-H']
+
 
 first_round_two_sets(test_hand1)
 first_round_two_sets(test_hand2)

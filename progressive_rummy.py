@@ -4,6 +4,7 @@
 # v1.0.2 = number of commits since previous round complete milestone
 
 import random
+import math
 
 two_full_decks = ["A-S", "2-S", "3-S", "4-S", "5-S", "6-S", "7-S", "8-S", "9-S", "10-S", "J-S", "Q-S", "K-S",
                   "A-S", "2-S", "3-S", "4-S", "5-S", "6-S", "7-S", "8-S", "9-S", "10-S", "J-S", "Q-S", "K-S",
@@ -233,24 +234,11 @@ def first_round_two_sets(p_hand):
     # BOL = Back of list
     # Closeness factor -  # of cards away from LD-P and which card(s) would be needed to achieve it
     # Close_1 = pairs, 1 card away from a set. Close_2 = singles, 2 cards away from a set
-    # Equation based on pairs, sets, jokers. # of ideal value cards away from LD-P
     # Card-Value gap ??? take a slight loss in value of lay down value if more cards can be laid down
     # Ex. 5-5-5-5-5 > 9-9-9. I would guess right now the card gap should be >= 2 and value-loss < 5
 
     # If LD-P > 1, check all possible ways to find the most valuable move
     # If O-LD = True, check if most valuable move could be improved with PO-LD
-
-    # Scenario 1: 2 sets/1 pair/1 JOK ???
-    # 4-4, J-J, Q-Q: buy 4 from discard and draw JOK
-    # 4-4-4, J-J, Q-Q: JOK, on turn draw J
-    # 4-4-4, J-J-J, Q-Q, JOK: best move is LD: J-J-J, Q-Q-JOK
-    # (1 set/1 pair/1 JOK > 2 sets/1 JOK).
-
-    # Scenario 2: 1 set/2+ pairs/2 JOK ???
-    # 4-4, 7-7, J-J, Q-Q, JOK: buy 4 from discard and draw JOK
-    # 4-4-4, 7-7, J-J, Q-Q, JOK, JOK: on turn draw 4
-    # 4-4-4-4, 7-7, J-J, Q-Q, JOK, JOK:  best move is LD: J-J-JOK, Q-Q-JOK
-    # (2 pairs/2 JOK > 1 set/1 pair/2 JOK).
 
     # Scenario 3: 1 set/2+ pairs/2 JOK/O-LD = True ???
     # O-LD_lists = [[J-J-J], [Q-Q-Q]]
@@ -259,65 +247,26 @@ def first_round_two_sets(p_hand):
     # 4-4-4-4, 7-7, J-J, Q-Q, JOK, JOK:  best move is LD: 4-4-4-4-JOK, 7-7-JOK + PO-LD: J-J, Q-Q
     # (1 set/1 pair/2 JOK + PO-LD > 2 pairs/2 JOK).
 
-    # Begin logic by defining when LD-NP, else then LD-P
-    # If LD-P make further considerations if LD-P > 1 and O-LD
-    # Simple equations for each if-statement to determine LD-P #
-
-    # If no JOK
-    # 2+ sets/ n/a of pairs, LD-P = # of sets - 1, Highest value sets
-    # Else, LD-NP                       0
+    # 0 Jokers, set_count choose 2
+    # 1 Joker, set count choose 2 + set_count * pair_count
+    # 2 or more Jokers, set_count choose 2 + set_count * pair_count + pair_count choose 2
     if jokers == 0:
-        if set_count >= 2:
-            can_lay_down = True
-        else:
-            can_lay_down = False
-    # If one JOK
-    # 0 pairs. LD-NP. JOK BOL           0
-    # 1 pair. LD-NP JOK BOL             0
-    # 2+ pairs. LD-NP. JOK BOL          0
-    # 1 set/0 pairs. LD-NP. JOK BOL     0
-    # 1 set/1 pair. LD-P = 1. Add JOK to the of end of pair
-    # 1 set/2+ pairs. LD-P = # of pairs. Add JOK to the end of the highest value pair
-    # 2+ sets/0 pairs. LD-P = 1. Add JOK to the end of the highest value set
-    # 2+ sets/1 pair. LD-P = # of sets - 1
-    # 2+ sets/2+ pair LD-P =
+        lay_down_possibilities = math.comb(set_count, 2)
     if jokers == 1:
-        if (set_count == 1) and (pair_count >= 1):
-            can_lay_down = True
-        elif set_count >= 2:
-            can_lay_down = True
-        else:
-            can_lay_down = False
-
-    # If two JOKs
-    # 0 pairs. LD-NP. JOKs BOL          0
-    # 1 pair. LD-NP. JOKs BOL           0
-    # 2+ pairs. LD-P. Add a JOK to the end of the two highest value pairs
-    # 1 set/0 pairs. LD-NP. JOK BOL     0
-    # 1 set/1 pair. LD-P. Add a JOK to the end of set and a JOK to the end of pair
-    # 1 set/2+ pairs. LD-P. Add a JOK to the end of set and a JOK to the end of the highest value pair ???
-    # 2+ sets/0 pairs. LD-P = 1. Add a JOK to the end of the highest value set
-    # 2+ sets/1 pair. LD-P = 2
-    # 2+ sets/2+ pair LD-P
-
-    # If three or four JOKs
-    # Same LD-NP/LD-P logic as if two JOKs
-    # Same JOK placement for first two JOKs as if two JOKs
-    # 2+ pairs. 3 on the highest. 4 on the second highest
-    # 1 set/1 pair. 3 on the set. 4 on the pair
-    # 1 set/2+ pairs.
+        lay_down_possibilities = math.comb(set_count, 2) + (set_count * pair_count)
     if jokers >= 2:
-        if (set_count == 0) and (pair_count >= 2):
-            can_lay_down = True
-        elif (set_count == 1) and (pair_count >= 1):
-            can_lay_down = True
-        elif set_count >= 2:
-            can_lay_down = True
-        else:
-            can_lay_down = False
+        lay_down_possibilities = math.comb(set_count, 2) + (set_count * pair_count) + math.comb(pair_count, 2)
+
+    # If lay_down_possibilities = 0, can_lay_down = False
+    # Else, can_lay_down = True
+    if lay_down_possibilities == 0:
+        can_lay_down = False
+    else:
+        can_lay_down = True
     # debugging
-    # print("7. Lay down possible: " + str(flat_sorted_hand) + ", " + str(lay_down_possible))
-    return flat_sorted_hand, can_lay_down
+    # print("7. Lay down possible: " + str(flat_sorted_hand) + ", " +
+        #str(can_lay_down) + ", " + str(lay_down_possibilities))
+    return flat_sorted_hand, can_lay_down, lay_down_possibilities
 
 
 # Start point
@@ -332,9 +281,53 @@ for player, hand in players_hands.items():
 # debugging
 test_hand1 = ['9-D', '7-D', '9-H', '5-D', '8-C', '5-S', '3-H', 'JOKER', "10-D", "9-S"]
 test_hand2 = ['Q-H', 'A-S', 'JOKER', '4-D', 'JOKER', 'K-H', '3-S', 'K-D', '5-H']
-
+test_hand3 = ['8-H', '8-H', '9-H', '9-H', '10-H', '10-H', 'J-S', 'J-H', 'Q-H', 'Q-H', 'JOKER', 'JOKER']
 
 first_round_two_sets(test_hand1)
 first_round_two_sets(test_hand2)
+first_round_two_sets(test_hand3)
 
+# Scenario 1: 2 sets/1 pair/1 JOK ???
+# 4-4, J-J, Q-Q: buy 4 from discard and draw JOK
+# 4-4-4, J-J, Q-Q: JOK, on turn draw J
+# 4-4-4, J-J-J, Q-Q, JOK: best move is LD: J-J-J, Q-Q-JOK
+# (1 set/1 pair/1 JOK > 2 sets/1 JOK).
 
+# Scenario 2: 1 set/2+ pairs/2 JOK ???
+# 4-4, 7-7, J-J, Q-Q, JOK: buy 4 from discard and draw JOK
+# 4-4-4, 7-7, J-J, Q-Q, JOK, JOK: on turn draw 4
+# 4-4-4-4, 7-7, J-J, Q-Q, JOK, JOK:  best move is LD: J-J-JOK, Q-Q-JOK
+# (2 pairs/2 JOK > 1 set/1 pair/2 JOK).
+
+# If no JOK
+# 2+ sets/ n/a of pairs, LD-P = # of sets - 1, Highest value sets
+# Else, LD-NP                       0
+
+# If one JOK
+# 0 pairs. LD-NP. JOK BOL           0
+# 1 pair. LD-NP JOK BOL             0
+# 2+ pairs. LD-NP. JOK BOL          0
+# 1 set/0 pairs. LD-NP. JOK BOL     0
+# 1 set/1 pair. LD-P = 1. Add JOK to the of end of pair
+# 1 set/2+ pairs. LD-P = # of pairs. Add JOK to the end of the highest value pair
+# 2+ sets/0 pairs. LD-P = 1. Add JOK to the end of the highest value set
+# 2+ sets/1 pair. LD-P = # of sets - 1
+# 2+ sets/2+ pair LD-P =
+
+# If two JOKs
+# 0 pairs. LD-NP. JOKs BOL          0
+# 1 pair. LD-NP. JOKs BOL           0
+# 2+ pairs. LD-P. Add a JOK to the end of the two highest value pairs
+# 1 set/0 pairs. LD-NP. JOK BOL     0
+# 1 set/1 pair. LD-P. Add a JOK to the end of set and a JOK to the end of pair
+# 1 set/2+ pairs. LD-P. Add a JOK to the end of set and a JOK to the end of the highest value pair ???
+# 2+ sets/0 pairs. LD-P = 1. Add a JOK to the end of the highest value set
+# 2+ sets/1 pair. LD-P = 2
+# 2+ sets/2+ pair LD-P
+
+# If three or four JOKs
+# Same LD-NP/LD-P logic as if two JOKs
+# Same JOK placement for first two JOKs as if two JOKs
+# 2+ pairs. 3 on the highest. 4 on the second highest
+# 1 set/1 pair. 3 on the set. 4 on the pair
+# 1 set/2+ pairs.

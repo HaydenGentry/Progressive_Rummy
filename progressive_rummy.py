@@ -247,6 +247,8 @@ def first_round_two_sets(p_hand):
     # 4-4-4-4, 7-7, J-J, Q-Q, JOK, JOK:  best move is LD: 4-4-4-4-JOK, 7-7-JOK + PO-LD: J-J, Q-Q
     # (1 set/1 pair/2 JOK + PO-LD > 2 pairs/2 JOK).
 
+    # TODO: Need to consider four of a kind or greater (7-7-7-7-+) as a optional pairs/sets if LD-P = 0
+    # Consider max length in value
     # 0 Jokers, set_count choose 2
     # 1 Joker, set count choose 2 + set_count * pair_count
     # 2 or more Jokers, set_count choose 2 + set_count * pair_count + pair_count choose 2
@@ -263,14 +265,94 @@ def first_round_two_sets(p_hand):
         can_lay_down = False
     else:
         can_lay_down = True
+
+    # If there is only one way to lay down the cards in the hand
+    # Lay down the contracts with the JOKs in their legal and valid positions
+    lay_down_contracts = []
+    if lay_down_possibilities == 1:
+        if jokers == 0:
+            for card in sets:
+                lay_down_contracts.append(value_dict[card])
+        # If one JOK, end of the last set if two sets, or end of the pair if set/pair
+        if jokers == 1:
+            if set_count == 2:
+                for card in sets:
+                    lay_down_contracts.append(value_dict[card])
+                lay_down_contracts.append(['JOKER'])
+            else:
+                for card in pairs:
+                    lay_down_contracts.append(value_dict[card])
+                lay_down_contracts.append(['JOKER'])
+                for card in sets:
+                    lay_down_contracts.append(value_dict[card])
+        # If two JOKs, end of each set if two sets, end of set and pair if set/pair, or end of each pair if two pairs
+        if jokers == 2:
+            if set_count == 2:
+                for card in sets:
+                    lay_down_contracts.append(value_dict[card])
+                    lay_down_contracts.append(['JOKER'])
+            elif set_count == 1:
+                for card in pairs:
+                    lay_down_contracts.append(value_dict[card])
+                    lay_down_contracts.append(['JOKER'])
+                for card in sets:
+                    lay_down_contracts.append(value_dict[card])
+                    lay_down_contracts.append(['JOKER'])
+            else:
+                for card in pairs:
+                    lay_down_contracts.append(value_dict[card])
+                    lay_down_contracts.append(['JOKER'])
+        # If three JOKs, same logic as if two JOKs, putting the third JOK in front of the first contract
+        if jokers == 3:
+            if set_count == 2:
+                lay_down_contracts.append(['JOKER'])
+                for card in sets:
+                    lay_down_contracts.append(value_dict[card])
+                    lay_down_contracts.append(['JOKER'])
+            elif set_count == 1:
+                lay_down_contracts.append(['JOKER'])
+                for card in pairs:
+                    lay_down_contracts.append(value_dict[card])
+                    lay_down_contracts.append(['JOKER'])
+                for card in sets:
+                    lay_down_contracts.append(value_dict[card])
+                    lay_down_contracts.append(['JOKER'])
+            else:
+                lay_down_contracts.append(['JOKER'])
+                for card in pairs:
+                    lay_down_contracts.append(value_dict[card])
+                    lay_down_contracts.append(['JOKER'])
+        # If four JOKs, same logic as if two JOKs, putting a JOK in front of each contract
+        if jokers == 4:
+            if set_count == 2:
+                for card in sets:
+                    lay_down_contracts.append(['JOKER'])
+                    lay_down_contracts.append(value_dict[card])
+                    lay_down_contracts.append(['JOKER'])
+            elif set_count == 1:
+                for card in pairs:
+                    lay_down_contracts.append(['JOKER'])
+                    lay_down_contracts.append(value_dict[card])
+                    lay_down_contracts.append(['JOKER'])
+                for card in sets:
+                    lay_down_contracts.append(['JOKER'])
+                    lay_down_contracts.append(value_dict[card])
+                    lay_down_contracts.append(['JOKER'])
+            else:
+                for card in pairs:
+                    lay_down_contracts.append(['JOKER'])
+                    lay_down_contracts.append(value_dict[card])
+                    lay_down_contracts.append(['JOKER'])
+    flat_lay_down_contracts = [element for sublist in lay_down_contracts for element in sublist]
+
     # debugging
-    # print("7. Lay down possible: " + str(flat_sorted_hand) + ", " +
-        #str(can_lay_down) + ", " + str(lay_down_possibilities))
-    return flat_sorted_hand, can_lay_down, lay_down_possibilities
+    # print(f"7. Lay down possible: {flat_sorted_hand}, {can_lay_down}, {lay_down_possibilities},"
+    #       f" {flat_lay_down_contracts}")
+    return flat_sorted_hand, can_lay_down, lay_down_possibilities, flat_lay_down_contracts
 
 
 # Start point
-num_players = 10
+num_players = 0
 shuffle_and_deal(two_full_decks)
 for player, hand in players_hands.items():
     if player == num_players:
@@ -286,6 +368,8 @@ test_hand3 = ['8-H', '8-H', '9-H', '9-H', '10-H', '10-H', 'J-S', 'J-H', 'Q-H', '
 first_round_two_sets(test_hand1)
 first_round_two_sets(test_hand2)
 first_round_two_sets(test_hand3)
+
+# Discard later after figure out logic
 
 # Scenario 1: 2 sets/1 pair/1 JOK ???
 # 4-4, J-J, Q-Q: buy 4 from discard and draw JOK

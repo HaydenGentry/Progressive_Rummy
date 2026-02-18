@@ -1,7 +1,7 @@
-# v1.0.7
+# v1.0.8
 # v1 = number of files (only file is for game logic right now)
 # v1.0 = number of rounds completed (working on first round, not complete yet)
-# v1.0.2 = number of commits since previous round complete milestone
+# v1.0.8 = number of commits since previous round complete milestone
 
 import random
 import math
@@ -249,7 +249,6 @@ def first_round_two_sets(p_hand):
     # 4-4-4-4, 7-7, J-J, Q-Q, JOK, JOK:  best move is LD: 4-4-4-4-JOK, 7-7-JOK + PO-LD: J-J, Q-Q
     # (1 set/1 pair/2 JOK + PO-LD > 2 pairs/2 JOK).
 
-    # TODO: Need to consider four of a kind or greater (7-7-7-7-+) as a optional pairs/sets if LD-P = 0
     # Consider max length in value
     # 0 Jokers, set_count choose 2
     # 1 Joker, set count choose 2 + set_count * pair_count
@@ -269,21 +268,17 @@ def first_round_two_sets(p_hand):
     else:
         can_lay_down = True
 
+    # TODO#1: Need to implement split lay down contracts logic by splitting the long set and adding any jokers
     # If cannot lay down normally, check if there is a set and if it is 4 cards or more
     # Based on number of jokers, determine if splitting the set could allow to laydown
     split_can_lay_down = False
-    if not can_lay_down:
-        if set_count == 1:
-            if jokers == 0:
-                if value_dict_lens[sets[0]] >= 6:
-                    split_can_lay_down = True
-            if jokers == 1:
-                if value_dict_lens[sets[0]] >= 5:
-                    split_can_lay_down = True
-            if jokers >= 2:
-                if value_dict_lens[sets[0]] >= 4:
-                    split_can_lay_down = True
-                    
+    if not can_lay_down and set_count == 1:
+        len_set = value_dict_lens[sets[0]]
+        if (jokers == 0 and len_set >= 6) or (jokers == 1 and len_set >= 5) or (jokers == 2 and len_set >= 4):
+            split_can_lay_down = True
+
+    # TODO#2: Need to implement the set_and_joker, and pair_and_joker logic for all of the lay_down_contracts logic
+    # TODO#2: This will make it easier for the O-LD logic later on, a list of lists of all valid laid down contracts
     # If there is only one way to lay down the cards in the hand
     # Lay down the contracts with the JOKs in their legal and valid positions
     lay_down_contracts = []
@@ -299,8 +294,11 @@ def first_round_two_sets(p_hand):
                 lay_down_contracts.append(['JOKER'])
             else:
                 for card in pairs:
-                    lay_down_contracts.append(value_dict[card])
-                lay_down_contracts.append(['JOKER'])
+                    pair_and_joker = value_dict[card]
+                    pair_and_joker += ['JOKER']
+                    lay_down_contracts.append(pair_and_joker)
+                    # lay_down_contracts.append(value_dict[card])
+                # lay_down_contracts.append(['JOKER'])
                 for card in sets:
                     lay_down_contracts.append(value_dict[card])
         # If two JOKs, end of each set if two sets, end of set and pair if set/pair, or end of each pair if two pairs
@@ -341,7 +339,7 @@ def first_round_two_sets(p_hand):
 
     # debugging
     # print(f"7. LD-P: {flat_sorted_hand}, {can_lay_down}, {split_can_lay_down}, "
-    #       f"{lay_down_possibilities}, {flat_lay_down_contracts}")
+    #       f"{lay_down_possibilities}, {lay_down_contracts}")
     return flat_sorted_hand, can_lay_down, split_can_lay_down, lay_down_possibilities, flat_lay_down_contracts
 
 
@@ -359,12 +357,14 @@ test_hand1 = ['9-D', '7-D', '9-H', '5-D', '8-C', '5-S', '3-H', 'JOKER', "10-D", 
 test_hand2 = ['Q-H', 'A-S', 'JOKER', '4-D', 'JOKER', 'K-H', '3-S', 'K-D', '5-H']
 test_hand3 = ['8-H', '8-H', '9-H', '9-H', '10-H', '10-H', 'J-S', 'J-H', 'Q-H', 'Q-H', 'JOKER', 'JOKER']
 test_hand4 = ['8-H', '8-H', '9-H', '9-H', 'JOKER', 'JOKER', 'JOKER', 'JOKER']
-test_hand5 = ['8-S', '8-S', '8-D', '8-D', 'JOKER', 'JOKER']
+test_hand5 = ['8-S', '8-S', '8-D', '8-D', '8-H', '8-H', '6-D', 'JOKER', 'JOKER']
+test_hand6 = ['8-S', '8-S', '8-D', '9-S', '9-S', '9-D', '10-S', '2-S', 'JOKER']
 first_round_two_sets(test_hand1)
 first_round_two_sets(test_hand2)
 first_round_two_sets(test_hand3)
 first_round_two_sets(test_hand4)
 first_round_two_sets(test_hand5)
+first_round_two_sets(test_hand6)
 
 # Discard later after figure out logic
 
